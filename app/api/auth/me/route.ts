@@ -13,7 +13,8 @@ export async function GET(request: Request) {
     authHeader && authHeader.startsWith("Bearer ")
       ? authHeader.slice(7).trim()
       : "";
-  const cookieToken = cookies().get("admin_access_token")?.value ?? "";
+  const store = await cookies();
+  const cookieToken = store.get("admin_access_token")?.value ?? "";
   const token = headerToken || cookieToken;
 
   if (!token) {
