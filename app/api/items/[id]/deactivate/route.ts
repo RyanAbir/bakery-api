@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { authFetch } from "@/lib/auth";
 
-const API_BASE = process.env.BACKEND_API_BASE_URL;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   if (!API_BASE) {
-    throw new Error("BACKEND_API_BASE_URL is not set");
+    throw new Error("NEXT_PUBLIC_API_URL is not set");
   }
 
   const upstream = await authFetch(`${API_BASE}/items/${params.id}/deactivate`, {

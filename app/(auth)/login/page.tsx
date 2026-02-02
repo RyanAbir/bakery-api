@@ -35,13 +35,14 @@ export default function LoginPage() {
       }
 
       const accessToken = data?.accessToken;
-      if (!accessToken) {
+      if (typeof accessToken !== "string" || !accessToken) {
         setError("Login response missing access token.");
         return;
       }
 
+      localStorage.setItem("accessToken", accessToken);
       setToken(accessToken);
-      router.replace("/");
+      router.replace("/items");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed.");
     } finally {

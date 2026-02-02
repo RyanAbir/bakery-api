@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { authFetch } from "@/lib/auth";
 
-const API_BASE = process.env.BACKEND_API_BASE_URL;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export async function GET(request: Request) {
   if (!API_BASE) {
-    throw new Error("BACKEND_API_BASE_URL is not set");
+    throw new Error("NEXT_PUBLIC_API_URL is not set");
   }
 
   const url = new URL(request.url);
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!API_BASE) {
-    throw new Error("BACKEND_API_BASE_URL is not set");
+    throw new Error("NEXT_PUBLIC_API_URL is not set");
   }
 
   let payload: Record<string, unknown> | null = null;

@@ -1,16 +1,40 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { authFetch } from "@/lib/auth";
 
-const API_BASE = process.env.BACKEND_API_BASE_URL;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
-export async function GET() {
+function getToken(request: Request) {
+  const authHeader = request.headers.get("authorization");
+  const headerToken =
+    authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7).trim()
+      : "";
+  const cookieToken = cookies().get("admin_access_token")?.value ?? "";
+  return headerToken || cookieToken;
+}
+
+export async function GET(request: Request) {
   if (!API_BASE) {
-    throw new Error("BACKEND_API_BASE_URL is not set");
+    throw new Error("NEXT_PUBLIC_API_URL is not set");
   }
 
-  const upstream = await authFetch(`${API_BASE}/items`, {
+  const token = getToken(request);
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const upstream = await fetch(`${API_BASE}/items`, {
+    method: "GET",
     cache: "no-store",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
+
+  if (!upstream.ok) {
+    const text = (await upstream.text()) || upstream.statusText || "Request failed";
+    return NextResponse.json({ error: text }, { status: upstream.status });
+  }
 
   const data = await upstream.json().catch(() => null);
 
@@ -27,7 +51,12 @@ type CreatePayload = {
 
 export async function POST(request: Request) {
   if (!API_BASE) {
-    throw new Error("BACKEND_API_BASE_URL is not set");
+    throw new Error("NEXT_PUBLIC_API_URL is not set");
+  }
+
+  const token = getToken(request);
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   let payload: CreatePayload | null = null;
@@ -47,9 +76,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const upstream = await authFetch(`${API_BASE}/items`, {
+  const upstream = await fetch(`${API_BASE}/items`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       name,
       categoryId,
@@ -58,6 +90,11 @@ export async function POST(request: Request) {
       trackExpiry: Boolean(trackExpiry ?? false),
     }),
   });
+
+  if (!upstream.ok) {
+    const text = (await upstream.text()) || upstream.statusText || "Request failed";
+    return NextResponse.json({ error: text }, { status: upstream.status });
+  }
 
   const data = await upstream.json().catch(() => null);
 

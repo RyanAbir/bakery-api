@@ -2,64 +2,46 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { apiGet, getToken } from "@/lib/api";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type AuthGuardProps = {
   children: ReactNode;
 };
 
+function readCookie(name: string) {
+  if (typeof document === "undefined") return "";
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length < 2) return "";
+  return parts.pop()?.split(";").shift() ?? "";
+}
+
 export default function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = getToken();
+    const cookieToken = readCookie("admin_access_token");
+    const storageToken =
+      typeof window === "undefined"
+        ? ""
+        : localStorage.getItem("accessToken") ?? "";
+    const token = cookieToken || storageToken;
     if (!token) {
-      router.replace("/login");
+      const query = searchParams.toString();
+      const currentPath = query ? `${pathname}?${query}` : pathname;
+      router.replace(`/login?from=${encodeURIComponent(currentPath)}`);
       return;
     }
-
-    let cancelled = false;
-
-    async function verify() {
-      try {
-        await apiGet("/auth/me");
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Failed to verify session."
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setReady(true);
-        }
-      }
-    }
-
-    verify();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+    setReady(true);
+  }, [pathname, router, searchParams]);
 
   if (!ready) {
     return (
       <div className="px-4 py-8 text-sm text-zinc-600">
         Checking session...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="px-4 py-8 text-sm text-red-600">
-        {error}
       </div>
     );
   }

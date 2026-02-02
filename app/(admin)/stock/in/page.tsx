@@ -38,7 +38,6 @@ export default function StockInPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [movementId, setMovementId] = useState<string | null>(null);
-  const [usedCreatedById, setUsedCreatedById] = useState(false);
   const [form, setForm] = useState<FormState>({
     date: todayISO(),
     reason: "PURCHASE",
@@ -117,7 +116,6 @@ export default function StockInPage() {
     setSaving(true);
     setError(null);
     setMovementId(null);
-    setUsedCreatedById(false);
 
     const payload = {
       date: form.date,
@@ -141,32 +139,6 @@ export default function StockInPage() {
       return;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to record stock in";
-      if (message.toLowerCase().includes("createdbyid")) {
-        // TODO: Remove this fallback when backend no longer requires createdById.
-        try {
-          const me = (await apiGet<{ id?: string }>("/auth/me")) ?? {};
-          if (me.id) {
-            const data = (await submitStockIn({
-              ...payload,
-              createdById: me.id,
-            })) as { id?: string } | null;
-            const id = data?.id ?? null;
-            if (id) {
-              setMovementId(id);
-            }
-            setUsedCreatedById(true);
-            return;
-          }
-        } catch (fallbackErr) {
-          const fallbackMessage =
-            fallbackErr instanceof Error
-              ? fallbackErr.message
-              : "Failed to record stock in";
-          setError(fallbackMessage);
-          return;
-        }
-      }
-
       setError(message);
     } finally {
       setSaving(false);
@@ -297,11 +269,6 @@ export default function StockInPage() {
         {movementId ? (
           <p>
             Created movement: {movementId}. <Link href="/stock/on-hand">View on-hand stock</Link>
-          </p>
-        ) : null}
-        {usedCreatedById ? (
-          <p>
-            TODO: Backend still requires createdById. Remove fallback once fixed.
           </p>
         ) : null}
 
