@@ -3,12 +3,16 @@ import { authFetch } from "@/lib/auth";
 
 const API_BASE = process.env.BACKEND_API_BASE_URL;
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!API_BASE) {
     throw new Error("BACKEND_API_BASE_URL is not set");
   }
 
-  const upstream = await authFetch(`${API_BASE}/items`, {
+  const url = new URL(request.url);
+  const params = url.searchParams.toString();
+  const query = params ? `?${params}` : "";
+
+  const upstream = await authFetch(`${API_BASE}/stock/movements${query}`, {
     cache: "no-store",
   });
 
@@ -17,20 +21,12 @@ export async function GET() {
   return NextResponse.json(data, { status: upstream.status });
 }
 
-type CreatePayload = {
-  name?: string;
-  categoryId?: string;
-  unitId?: string;
-  reorderLevel?: number;
-  trackExpiry?: boolean;
-};
-
 export async function POST(request: Request) {
   if (!API_BASE) {
     throw new Error("BACKEND_API_BASE_URL is not set");
   }
 
-  let payload: CreatePayload | null = null;
+  let payload: Record<string, unknown> | null = null;
 
   try {
     payload = await request.json();
@@ -38,25 +34,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
   }
 
-  const { name, categoryId, unitId, reorderLevel, trackExpiry } = payload ?? {};
-
-  if (!name || !categoryId || !unitId) {
-    return NextResponse.json(
-      { message: "Name, categoryId, and unitId are required" },
-      { status: 400 }
-    );
+  if (!payload) {
+    return NextResponse.json({ message: "Missing payload" }, { status: 400 });
   }
 
-  const upstream = await authFetch(`${API_BASE}/items`, {
+  const upstream = await authFetch(`${API_BASE}/stock/movements`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name,
-      categoryId,
-      unitId,
-      reorderLevel: Number(reorderLevel ?? 0),
-      trackExpiry: Boolean(trackExpiry ?? false),
-    }),
+    body: JSON.stringify(payload),
   });
 
   const data = await upstream.json().catch(() => null);

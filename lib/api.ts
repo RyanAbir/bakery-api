@@ -1,8 +1,7 @@
 export const TOKEN_KEY = "token";
 export const AUTH_COOKIE = "admin_access_token";
 
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const API_BASE = "/api";
 
 if (process.env.NODE_ENV !== "production") {
   console.log("API_BASE", API_BASE);

@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE = process.env.BACKEND_API_BASE_URL;
 
 export async function POST(request: Request) {
   if (!API_BASE) {
-    return NextResponse.json(
-      { message: "Missing API base URL" },
-      { status: 500 }
-    );
+    throw new Error("BACKEND_API_BASE_URL is not set");
   }
 
   let payload: { email?: string; password?: string } | null = null;
